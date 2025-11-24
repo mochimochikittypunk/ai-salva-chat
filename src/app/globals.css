@@ -1,0 +1,223 @@
+:root {
+  --primary-color: #DCDC46; /* Salvador Yellow */
+  --accent-color: #E14E2A;  /* Salvador Red */
+  --text-color: #555555;    /* Dark Gray */
+  --light-text-color: #ffffff;
+  --bg-color: #ffffff;
+  --chat-bg-user: #f0f0f0;
+  --chat-bg-bot: #fffde7;   /* Very light yellow */
+  --border-color: #e0e0e0;
+  --header-height: 60px;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  font-family: 'Inter', 'Noto Sans JP', sans-serif;
+  color: var(--text-color);
+  background-color: var(--bg-color);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--text-color);
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+a:hover {
+  opacity: 0.7;
+}
+
+.container {
+  max-width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f9f9f9;
+}
+
+/* Header Styles */
+.header {
+  height: var(--header-height);
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-text {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: 0.05em;
+  color: var(--text-color);
+  text-transform: uppercase;
+}
+
+.logo-sub {
+  font-size: 0.8rem;
+  color: #888;
+  margin-left: 10px;
+  border-left: 1px solid #ccc;
+  padding-left: 10px;
+}
+
+/* Chat Window Styles */
+.chat-container {
+  flex: 1;
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* For inner scroll */
+}
+
+.chat-window {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.message {
+  max-width: 85%;
+  padding: 16px 20px;
+  border-radius: 16px;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.message.user {
+  align-self: flex-end;
+  background-color: var(--chat-bg-user);
+  border-bottom-right-radius: 4px;
+  color: var(--text-color);
+}
+
+.message.bot {
+  align-self: flex-start;
+  background-color: var(--chat-bg-bot);
+  border-bottom-left-radius: 4px;
+  border: 1px solid var(--primary-color);
+  color: var(--text-color);
+}
+
+.message-role {
+  font-size: 0.75rem;
+  margin-bottom: 4px;
+  color: #888;
+  font-weight: bold;
+}
+
+/* Input Area Styles */
+.input-area-wrapper {
+  background-color: #ffffff;
+  padding: 20px;
+  border-top: 1px solid var(--border-color);
+  width: 100%;
+}
+
+.input-area {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  gap: 10px;
+  position: relative;
+}
+
+.input-area input {
+  flex: 1;
+  padding: 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 30px; /* Pill shape */
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+  background-color: #fcfcfc;
+}
+
+.input-area input:focus {
+  border-color: var(--primary-color);
+  background-color: #ffffff;
+}
+
+.input-area button {
+  padding: 0 30px;
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s, transform 0.1s;
+  box-shadow: 0 2px 4px rgba(225, 78, 42, 0.3);
+}
+
+.input-area button:hover {
+  background-color: #c03e1e;
+  transform: translateY(-1px);
+}
+
+.input-area button:active {
+  transform: translateY(1px);
+}
+
+.input-area button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.loading {
+  font-size: 0.8rem;
+  color: #888;
+  text-align: center;
+  margin-top: 10px;
+  font-style: italic;
+}
+
+/* Scrollbar styling */
+.chat-window::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-window::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.chat-window::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+.chat-window::-webkit-scrollbar-thumb:hover {
+  background: #bbb;
+}
