@@ -2,13 +2,27 @@
 
 import { useState, useRef, useEffect } from 'react';
 
+// Simple UUID generator
+function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
 export default function Home() {
     const [messages, setMessages] = useState([
         { role: 'bot', content: 'こんにちは！AIサルバさんです。コーヒーのことなら何でも聞いてくださいね！' }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [sessionId, setSessionId] = useState('');
     const messagesEndRef = useRef(null);
+
+    useEffect(() => {
+        // Generate Session ID on mount
+        setSessionId(generateUUID());
+    }, []);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -17,6 +31,32 @@ export default function Home() {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    // Auto-record conversation when messages update (and it's not the initial state)
+    useEffect(() => {
+        if (messages.length > 1 && sessionId) {
+            const recordSummary = async () => {
+                try {
+                    await fetch('/api/summary', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ history: messages, sessionId })
+                    });
+                    // Silent update, no alert needed
+                } catch (error) {
+                    console.error('Error auto-recording:', error);
+                }
+            };
+
+            // Debounce slightly to avoid too many requests if rapid fire, 
+            // but for now simple execution after state update is fine.
+            // We only record after bot response to capture full context.
+            const lastMessage = messages[messages.length - 1];
+            if (lastMessage.role === 'bot') {
+                recordSummary();
+            }
+        }
+    }, [messages, sessionId]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
