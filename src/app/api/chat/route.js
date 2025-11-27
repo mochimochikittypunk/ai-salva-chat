@@ -100,12 +100,7 @@ export async function POST(req) {
                 contents: contents,
                 tools: [
                     {
-                        googleSearchRetrieval: {
-                            dynamicRetrievalConfig: {
-                                mode: "MODE_DYNAMIC",
-                                dynamicThreshold: 0.7
-                            }
-                        }
+                        googleSearch: {}
                     }
                 ]
             })
@@ -123,7 +118,10 @@ export async function POST(req) {
             throw new Error("No response candidates from Gemini API");
         }
 
-        const text = data.candidates[0].content.parts[0].text;
+        // Join all text parts to handle cases where response is split
+        const text = data.candidates[0].content.parts
+            .map(part => part.text || '')
+            .join('');
 
         return NextResponse.json({ response: text });
 

@@ -22,12 +22,7 @@ async function testSearch() {
         ],
         tools: [
             {
-                googleSearchRetrieval: {
-                    dynamicRetrievalConfig: {
-                        mode: "MODE_DYNAMIC",
-                        dynamicThreshold: 0.7
-                    }
-                }
+                googleSearch: {}
             }
         ]
     };
