@@ -37,10 +37,16 @@ GitHubとVercel（バーセル）というサービスを使います。どち�
 3.  **設定とデプロイ**
     -   **Configure Project** 画面が表示されます。
     -   **Environment Variables**（環境変数）という項目を開きます。
-    -   ここにAPIキーを設定します：
-        -   **Key**: `GOOGLE_API_KEY`
-        -   **Value**: あなたのGemini APIキー（`.env.local` にあるものと同じ）
-    -   「Add」をクリックして追加します。
+    -   ここに以下の4つのAPIキーを設定します（`.env.local` の内容をコピーしてください）：
+        1.  **Key**: `GOOGLE_API_KEY`
+            -   **Value**: Gemini APIキー
+        2.  **Key**: `GOOGLE_SHEETS_ID`
+            -   **Value**: スプレッドシートID
+        3.  **Key**: `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+            -   **Value**: サービスアカウントのメールアドレス
+        4.  **Key**: `GOOGLE_PRIVATE_KEY`
+            -   **Value**: 秘密鍵（`-----BEGIN...` から `...END PRIVATE KEY-----` まで全て。「"」で囲む必要はありませんが、改行コードはそのままでOKです）
+    -   それぞれのキーを入力するたびに「Add」をクリックして追加します。
     -   最後に下の「Deploy」ボタンをクリックします。
 
 4.  **完了！**
