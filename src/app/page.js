@@ -10,10 +10,16 @@ function generateUUID() {
     });
 }
 
+const GREETINGS = [
+    "こんにちは！何かお困りですか？",
+    "こんにちは！今日はどうされましたか？",
+    "こんにちは！元気ですか〜？",
+    "こんにちは！突然ですが、わたし占いもできるんです！",
+    "こんにちは！何でも相談してくださいね！"
+];
+
 export default function Home() {
-    const [messages, setMessages] = useState([
-        { role: 'bot', content: 'こんにちは！AIサルバさんです。コーヒーのことなら何でも聞いてくださいね！' }
-    ]);
+    const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [sessionId, setSessionId] = useState('');
@@ -22,6 +28,12 @@ export default function Home() {
     useEffect(() => {
         // Generate Session ID on mount
         setSessionId(generateUUID());
+
+        // Set random greeting
+        const randomGreeting = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+        setMessages([
+            { role: 'bot', content: randomGreeting }
+        ]);
     }, []);
 
     const scrollToBottom = () => {
