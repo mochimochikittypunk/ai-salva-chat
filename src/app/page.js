@@ -106,6 +106,32 @@ export default function Home() {
         }
     };
 
+    const handlePayment = (e) => {
+        e.preventDefault();
+        const url = 'https://square.link/u/eTK8JEe2?src=embed';
+        const title = 'Square Payment Links';
+
+        // Some platforms embed in an iframe, so we want to top window to calculate sizes correctly
+        const topWindow = window.top ? window.top : window;
+
+        // Fixes dual-screen position                                Most browsers          Firefox
+        const dualScreenLeft = topWindow.screenLeft !== undefined ? topWindow.screenLeft : topWindow.screenX;
+        const dualScreenTop = topWindow.screenTop !== undefined ? topWindow.screenTop : topWindow.screenY;
+
+        const width = topWindow.innerWidth ? topWindow.innerWidth : document.documentElement.clientWidth ? document.documentElement.clientWidth : screen.width;
+        const height = topWindow.innerHeight ? topWindow.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.height;
+
+        const h = height * .75;
+        const w = 500;
+
+        const systemZoom = width / topWindow.screen.availWidth;
+        const left = (width - w) / 2 / systemZoom + dualScreenLeft;
+        const top = (height - h) / 2 / systemZoom + dualScreenTop;
+        const newWindow = window.open(url, title, `scrollbars=yes, width=${w / systemZoom}, height=${h / systemZoom}, top=${top}, left=${left}`);
+
+        if (window.focus && newWindow) newWindow.focus();
+    };
+
     return (
         <div className="container">
             <header className="header">
@@ -149,6 +175,9 @@ export default function Home() {
                     />
                     <button type="submit" disabled={isLoading || !input.trim()}>
                         送信
+                    </button>
+                    <button type="button" className="payment-btn" onClick={handlePayment}>
+                        決済
                     </button>
                 </form>
             </div>

@@ -1,11 +1,15 @@
 :root {
-  --primary-color: #DCDC46; /* Salvador Yellow */
-  --accent-color: #E14E2A;  /* Salvador Red */
-  --text-color: #555555;    /* Dark Gray */
+  --primary-color: #DCDC46;
+  /* Salvador Yellow */
+  --accent-color: #E14E2A;
+  /* Salvador Red */
+  --text-color: #555555;
+  /* Dark Gray */
   --light-text-color: #ffffff;
   --bg-color: #ffffff;
   --chat-bg-user: #f0f0f0;
-  --chat-bg-bot: #fffde7;   /* Very light yellow */
+  --chat-bg-bot: #fffde7;
+  /* Very light yellow */
   --border-color: #e0e0e0;
   --header-height: 60px;
 }
@@ -53,7 +57,7 @@ a:hover {
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .header-content {
@@ -88,7 +92,8 @@ a:hover {
   padding: 20px;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* For inner scroll */
+  overflow: hidden;
+  /* For inner scroll */
 }
 
 .chat-window {
@@ -100,7 +105,7 @@ a:hover {
   gap: 20px;
   background-color: #ffffff;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .message {
@@ -110,7 +115,7 @@ a:hover {
   font-size: 0.95rem;
   line-height: 1.7;
   position: relative;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .message.user {
@@ -155,7 +160,8 @@ a:hover {
   flex: 1;
   padding: 16px;
   border: 2px solid var(--border-color);
-  border-radius: 30px; /* Pill shape */
+  border-radius: 30px;
+  /* Pill shape */
   font-size: 1rem;
   outline: none;
   transition: border-color 0.2s;
@@ -168,7 +174,8 @@ a:hover {
 }
 
 .input-area button {
-  padding: 0 30px;
+  padding: 0 24px;
+  /* Slightly reduced padding */
   background-color: var(--accent-color);
   color: white;
   border: none;
@@ -178,6 +185,19 @@ a:hover {
   font-weight: bold;
   transition: background-color 0.2s, transform 0.1s;
   box-shadow: 0 2px 4px rgba(225, 78, 42, 0.3);
+  white-space: nowrap;
+  /* Prevent text wrapping */
+}
+
+.input-area button.payment-btn {
+  background-color: #ffbf00;
+  /* Square yellow */
+  color: #000000;
+  box-shadow: 0 2px 4px rgba(255, 191, 0, 0.3);
+}
+
+.input-area button.payment-btn:hover {
+  background-color: #e6ac00;
 }
 
 .input-area button:hover {
@@ -194,6 +214,25 @@ a:hover {
   cursor: not-allowed;
   box-shadow: none;
   transform: none;
+}
+
+/* Mobile Responsiveness for Input Area */
+@media (max-width: 600px) {
+  .input-area {
+    gap: 8px;
+  }
+
+  .input-area input {
+    padding: 12px 16px;
+    /* Smaller padding */
+    font-size: 0.95rem;
+  }
+
+  .input-area button {
+    padding: 0 16px;
+    /* Smaller padding */
+    font-size: 0.9rem;
+  }
 }
 
 .loading {
