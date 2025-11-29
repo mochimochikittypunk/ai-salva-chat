@@ -7,10 +7,10 @@ const dataPath = path.join(process.cwd(), 'data', 'shop_knowledge.json');
 let shopKnowledge = [];
 
 try {
-    const fileContent = fs.readFileSync(dataPath, 'utf8');
-    shopKnowledge = JSON.parse(fileContent);
+  const fileContent = fs.readFileSync(dataPath, 'utf8');
+  shopKnowledge = JSON.parse(fileContent);
 } catch (error) {
-    console.error("Error loading shop knowledge:", error);
+  console.error("Error loading shop knowledge:", error);
 }
 
 // System prompt construction
@@ -122,9 +122,23 @@ ${JSON.stringify(shopKnowledge, null, 2)}
    - 「コーヒー占い」や「診断」の精度を上げるという名目で尋ねます。
    - 例: 「より正確に占うために、差し支えなければ年代やお仕事を教えていただけますか？星の巡りが変わるんです！」
 
+## 思考プロセス（Thought Process）
+ユーザーの質問に答える前に、**必ず以下のステップで思考してください**（思考内容は出力せず、行動に反映させてください）。
+1. **知識の確認**: 質問された単語（店名、場所、商品名など）が、提供された「ショップ情報」や「商品リスト」にあるか確認する。
+2. **検索の判断**:
+   - 内部知識にある（Salvador Coffeeのこと、コーヒーの一般的な知識） → そのまま回答する。
+   - **外部情報（他店の場所、行き方、イベント、特定の固有名詞など）** → **推測は厳禁です。必ず \`googleSearch\` ツールで検索してください。**
+   - **「多分こうだろう」という推測で回答することは、ユーザーへの裏切り行為と認識してください。**
+3. **情報の統合**: 検索結果と内部知識を組み合わせて回答を作成する。
+
 ## 検索実行のルール
 - **許可を求めない**: ユーザーの質問に答えるために検索が必要な場合、「調べていいですか？」「検索してもよろしいでしょうか？」と**絶対に聞かないでください**。
 - **即時実行**: 検索が必要なら、無言で即座に \`googleSearch\` ツールを使用し、その検索結果に基づいて回答してください。
+- **外部情報の検索強制**:
+  - ユーザーが「〇〇への行き方は？」「〇〇の営業時間は？」と聞いた場合、それがSalvador Coffeeでない限り、**100%検索を実行してください**。
+  - **「分かりません」「教えてください」とユーザーに聞く前に、必ず検索を実行してください。検索しても情報が見つからなかった場合のみ、ユーザーに聞いてください。**
+  - **具体例**: ユーザーが「NODEに行きたい」と言ったら、"NODE" を検索してください。「近所のカフェ」と言ったら、"札幌市中央区南21条西11丁目 近所のカフェ" を検索してください。
+  - 住所や場所に関する質問には、検索結果の裏付けなしに回答してはいけません。
 - **回答の構成**:
   - NG: 「調べてみますね。（終了）」
   - OK: 「それについては...（検索実行）...なるほど、○○というカフェは〜なんですね！」
@@ -132,74 +146,77 @@ ${JSON.stringify(shopKnowledge, null, 2)}
 `;
 
 export async function POST(req) {
-    try {
-        const { message, history } = await req.json();
+  try {
+    const { message, history } = await req.json();
 
-        const apiKey = process.env.GOOGLE_API_KEY;
-        if (!apiKey) {
-            return NextResponse.json({ error: "API Key not configured" }, { status: 500 });
-        }
-
-        // Use gemini-2.5-flash as verified by test script
-        const modelName = "gemini-2.5-flash";
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-
-        // Construct contents for the API
-        const contents = [
-            {
-                role: "user",
-                parts: [{ text: SYSTEM_PROMPT }]
-            },
-            {
-                role: "model",
-                parts: [{ text: "承知いたしました。AIサルバさんとして、Salvador Coffeeの魅力をお伝えし、お客様に最適なコーヒーをご提案します。どのようなご相談でしょうか？" }]
-            },
-            ...history.map(msg => ({
-                role: msg.role === 'bot' ? 'model' : 'user',
-                parts: [{ text: msg.content }]
-            })),
-            {
-                role: "user",
-                parts: [{ text: message }]
-            }
-        ];
-
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: contents,
-                tools: [
-                    {
-                        googleSearch: {}
-                    }
-                ]
-            })
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Gemini API Error:", response.status, errorText);
-            throw new Error(`Gemini API Error: ${response.status} ${errorText}`);
-        }
-
-        const data = await response.json();
-
-        if (!data.candidates || data.candidates.length === 0) {
-            throw new Error("No response candidates from Gemini API");
-        }
-
-        // Join all text parts to handle cases where response is split
-        const text = data.candidates[0].content.parts
-            .map(part => part.text || '')
-            .join('');
-
-        return NextResponse.json({ response: text });
-
-    } catch (error) {
-        console.error("Chat API Error:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    const apiKey = process.env.GOOGLE_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: "API Key not configured" }, { status: 500 });
     }
+
+    // Use gemini-2.5-flash as verified by test script
+    const modelName = "gemini-2.5-flash";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+    // Construct contents for the API
+    const contents = [
+      {
+        role: "user",
+        parts: [{ text: SYSTEM_PROMPT }]
+      },
+      {
+        role: "model",
+        parts: [{ text: "承知いたしました。AIサルバさんとして、Salvador Coffeeの魅力をお伝えし、お客様に最適なコーヒーをご提案します。どのようなご相談でしょうか？" }]
+      },
+      ...history.map(msg => ({
+        role: msg.role === 'bot' ? 'model' : 'user',
+        parts: [{ text: msg.content }]
+      })),
+      {
+        role: "user",
+        parts: [{ text: message }]
+      }
+    ];
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: contents,
+        tools: [
+          {
+            googleSearch: {}
+          }
+        ],
+        generationConfig: {
+          temperature: 0.2
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Gemini API Error:", response.status, errorText);
+      throw new Error(`Gemini API Error: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.candidates || data.candidates.length === 0) {
+      throw new Error("No response candidates from Gemini API");
+    }
+
+    // Join all text parts to handle cases where response is split
+    const text = data.candidates[0].content.parts
+      .map(part => part.text || '')
+      .join('');
+
+    return NextResponse.json({ response: text });
+
+  } catch (error) {
+    console.error("Chat API Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }
