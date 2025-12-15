@@ -9,6 +9,9 @@ curl -L -A "$USER_AGENT" "https://salvador.supersale.jp/" > shop_page1.html
 echo "Fetching page 2..."
 curl -L -A "$USER_AGENT" "https://salvador.supersale.jp/?page=2" > shop_page2.html
 
+echo "Fetching page 3..."
+curl -L -A "$USER_AGENT" "https://salvador.supersale.jp/?page=3" > shop_page3.html
+
 echo "Parsing HTML and updating knowledge base..."
 node scripts/parse_shop_html.js > data/shop_knowledge.json
 

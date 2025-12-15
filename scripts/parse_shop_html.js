@@ -3,7 +3,7 @@ const cheerio = require('cheerio');
 const path = require('path');
 
 // List of HTML files to parse
-const htmlFiles = ['shop_page1.html', 'shop_page2.html'];
+const htmlFiles = ['shop_page1.html', 'shop_page2.html', 'shop_page3.html'];
 const products = [];
 
 htmlFiles.forEach(fileName => {
