@@ -13,8 +13,100 @@ try {
   console.error("Error loading shop knowledge:", error);
 }
 
+// Load Omikuji data
+const omikujiPath = path.join(process.cwd(), 'data', 'omikuji_data.json');
+let omikujiData = {};
+
+try {
+  const omikujiContent = fs.readFileSync(omikujiPath, 'utf8');
+  omikujiData = JSON.parse(omikujiContent);
+} catch (error) {
+  console.error("Error loading omikuji data:", error);
+}
+
+// --- HELPER FUNCTIONS FOR OMIKUJI ---
+function isPrime(num) {
+  if (num <= 1) return false;
+  if (num <= 3) return true;
+  if (num % 2 === 0 || num % 3 === 0) return false;
+  for (let i = 5; i * i <= num; i += 6) {
+    if (num % i === 0 || num % (i + 2) === 0) return false;
+  }
+  return true;
+}
+
+function isFibonacci(num) {
+  if (num < 0) return false;
+  const isPerfectSquare = (n) => Math.sqrt(n) % 1 === 0;
+  return isPerfectSquare(5 * num * num + 4) || isPerfectSquare(5 * num * num - 4);
+}
+
+function generateOrderCode() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+function drawOmikuji(number) {
+  const num = parseInt(number);
+  let rank = '';
+
+  // Logic:
+  // 素数かつフィボナッチ数＝大吉 (Prime && Fib)
+  // 素数のみ＝中吉 (Prime && !Fib)
+  // 素数とフィボナッチ数以外の奇数＝小吉 (!Prime && !Fib && Odd)
+  // 素数とフィボナッチ数以外の偶数＝吉 (!Prime && !Fib && Even)
+  // その他 (Fibonacci only: 1, 8, 21...) -> 末吉 (Suekichi)
+
+  const p = isPrime(num);
+  const f = isFibonacci(num);
+  const odd = num % 2 !== 0;
+
+  if (p && f) {
+    rank = '大吉';
+  } else if (p && !f) {
+    rank = '中吉';
+  } else if (!p && !f && odd) {
+    rank = '小吉';
+  } else if (!p && !f && !odd) {
+    rank = '吉';
+  } else {
+    // 残り（フィボナッチのみなど）
+    rank = '末吉';
+  }
+
+  // Get random content
+  const contentList = omikujiData[rank] || [];
+  let content = null;
+  if (contentList.length > 0) {
+    content = contentList[Math.floor(Math.random() * contentList.length)];
+  }
+
+  // Geisha Lottery (3%)
+  const isGeishaWinner = Math.random() < 0.03;
+  let geishaResult = "";
+
+  if (isGeishaWinner) {
+    const code = generateOrderCode();
+    geishaResult = `【当選おめでとうございます！！】\nなんと、3%の確率で当たる「ゲイシャの豆」に当選しました！\n運勢とともに、最高級のコーヒーをお楽しみください。\n\n[受け取り方法]\n1. チャットの「決済」ボタンを押す\n2. 金額は送料のみの「260円」になります\n3. 備考欄に当選コード【 ${code} 】と住所を入力してください！`;
+  }
+
+  return JSON.stringify({
+    number: num,
+    rank: rank,
+    poem: content ? content.poem : "データなし",
+    meaning: content ? content.meaning : "データなし",
+    advice: content ? content.advice : "データなし",
+    geisha_lottery: isGeishaWinner ? "WIN" : "LOSE",
+    geisha_message: geishaResult
+  });
+}
+
 // --- FEATURE FLAGS ---
-const ENABLE_DECEMBER_SURVEY = true; // 12月限定アンケート: 1月になったら false にするか削除してください
+const ENABLE_DECEMBER_SURVEY = false; // 12月限定アンケート: 1月になったら false にするか削除してください
 // ---------------------
 
 // System prompt construction
@@ -139,6 +231,14 @@ ${JSON.stringify(shopKnowledge, null, 2)}
 
 - 例: 「より正確に占うために、差し支えなければ年代やお仕事を教えていただけますか？星の巡りが変わるんです！」
 
+## おみくじ機能
+- ユーザーが「おみくじ」と言ったり、運試しをしたいと言った場合は、以下のフローを実行してください。
+1. **「それでは、1から33までの数字の中から、直感で好きな数字を一つ選んで教えてください！」** とユーザーに数字を選ばせる。
+2. ユーザーが数字を答えたら、drawOmikuji ツールを呼び出して運勢を占う。
+3. ツールから返ってきた結果（漢文、意味、アドバイス、ゲイシャ当選有無）を元に、厳かな雰囲気でおみくじの結果を伝える。
+   - **重要**: ゲイシャに当選した場合は、当選メッセージと当選コードを盛大に祝福しながら伝えてください。
+   - 最後に、「この結果をぜひSNSでシェアしてくださいね！」と促してください。
+
 ## セールスシナリオ（Quick Sample Recommendation）
 会話の中で商品を提案する際は、以下のフローに従って積極的に販売につなげてください。
 
@@ -262,15 +362,76 @@ export async function POST(req) {
       return NextResponse.json({ error: "API Key not configured" }, { status: 500 });
     }
 
-    // Use gemini-2.5-flash as verified by test script
-    const modelName = "gemini-2.5-flash";
+    // Use gemini-pro-latest as verified by model list
+    const modelName = "gemini-pro-latest";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+
+    // --- OMIKUJI LIMIT LOGIC ---
+    // --- OMIKUJI LIMIT LOGIC ---
+    // Count how many times omikuji results have been shown in history
+    const omikujiCount = history.filter(msg =>
+      msg.role === 'bot' && (
+        msg.content.includes('大吉') ||
+        msg.content.includes('中吉') ||
+        msg.content.includes('小吉') ||
+        msg.content.includes('末吉') ||
+        msg.content.includes('凶') ||
+        (msg.content.includes('吉') && !msg.content.includes('大吉') && !msg.content.includes('中吉') && !msg.content.includes('小吉') && !msg.content.includes('末吉'))
+      )
+    ).length;
+
+    console.log("DEBUG: Omikuji Count Check:", omikujiCount);
+    history.forEach((h, i) => {
+      if (h.role === 'bot' && (h.content.includes('大吉') || h.content.includes('吉'))) {
+        console.log(`DEBUG: History[${i}] matched: ${h.content.substring(0, 50)}...`);
+      }
+    });
+
+    const OMIKUJI_LIMIT = 2;
+    const isLimitReached = omikujiCount >= OMIKUJI_LIMIT;
+
+    let currentSystemPrompt = SYSTEM_PROMPT;
+    let currentTools = [];
+
+    // Construct Tools
+    // Note: Google Search is currently disabled to prevent 400 error with Function Calling
+    // If you enable it, ensure model supports it combined with Function Declarations
+
+    // Tools logic
+    const omikujiTool = {
+      function_declarations: [
+        {
+          name: "drawOmikuji",
+          description: "Draws an omikuji fortune based on a selected number (1-33).",
+          parameters: {
+            type: "OBJECT",
+            properties: {
+              number: {
+                type: "INTEGER",
+                description: "The number selected by the user (1-33)."
+              }
+            },
+            required: ["number"]
+          }
+        }
+      ]
+    };
+
+    if (!isLimitReached) {
+      currentTools.push(omikujiTool);
+      currentSystemPrompt += `\n\nCurrent Omikuji Count: ${omikujiCount}/${OMIKUJI_LIMIT}`;
+    } else {
+      // Limit reached: Do NOT add omikuji tool
+      currentSystemPrompt += `\n\nCurrent Omikuji Count: ${omikujiCount}/${OMIKUJI_LIMIT} (LIMIT REACHED)\nRULE: The user has reached the daily limit for Omikuji (2 times). If they ask to play again, politely refuse and tell them to come back tomorrow. Do NOT try to call drawOmikuji.`;
+    }
+
 
     // Construct contents for the API
     const contents = [
       {
         role: "user",
-        parts: [{ text: SYSTEM_PROMPT }]
+        parts: [{ text: currentSystemPrompt }]
       },
       {
         role: "model",
@@ -293,11 +454,7 @@ export async function POST(req) {
       },
       body: JSON.stringify({
         contents: contents,
-        tools: [
-          {
-            googleSearch: {}
-          }
-        ],
+        tools: currentTools,
         generationConfig: {
           temperature: 0.2
         }
@@ -310,10 +467,60 @@ export async function POST(req) {
       throw new Error(`Gemini API Error: ${response.status} ${errorText}`);
     }
 
-    const data = await response.json();
+    let data = await response.json();
 
     if (!data.candidates || data.candidates.length === 0) {
       throw new Error("No response candidates from Gemini API");
+    }
+
+    // Check for function call
+    const candidate = data.candidates[0];
+    const part = candidate.content.parts[0];
+
+    if (part.functionCall) {
+      const fc = part.functionCall;
+      if (fc.name === 'drawOmikuji') {
+        const args = fc.args;
+        const functionResult = drawOmikuji(args.number);
+
+        // Second call with function response
+        const secondContents = [
+          ...contents,
+          {
+            role: "model",
+            parts: [
+              { functionCall: fc }
+            ]
+          },
+          {
+            role: "function",
+            parts: [
+              {
+                functionResponse: {
+                  name: "drawOmikuji",
+                  response: { name: "drawOmikuji", content: JSON.parse(functionResult) }
+                }
+              }
+            ]
+          }
+        ];
+
+        const secondResponse = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: secondContents,
+            tools: [{ googleSearch: {} }], // No need for custom tools in second turn usually, but keeping Google Search is good
+            generationConfig: { temperature: 0.2 }
+          })
+        });
+
+        if (!secondResponse.ok) {
+          throw new Error(`Gemini API Error (2nd turn): ${secondResponse.status}`);
+        }
+
+        data = await secondResponse.json();
+      }
     }
 
     // Join all text parts to handle cases where response is split
