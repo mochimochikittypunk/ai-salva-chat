@@ -78,11 +78,37 @@ function drawOmikuji(number) {
     rank = '末吉';
   }
 
+
   // Get random content
   const contentList = omikujiData[rank] || [];
   let content = null;
   if (contentList.length > 0) {
     content = contentList[Math.floor(Math.random() * contentList.length)];
+  }
+
+  // Recommendation Logic
+  let recommendedProduct = null;
+  if (shopKnowledge && shopKnowledge.length > 0) {
+    // Filter valid coffee products (ignore metadata items like "Reason for deliciousness" which are cheap)
+    const coffeeProducts = shopKnowledge.filter(item => {
+      if (!item.price) return false;
+      const priceNum = parseInt(item.price.replace(/[¥,]/g, ''));
+      return priceNum >= 1000; // Filter out cheap items (metadata/stickers)
+    });
+
+    if (coffeeProducts.length > 0) {
+      const product = coffeeProducts[Math.floor(Math.random() * coffeeProducts.length)];
+      const priceNum = parseInt(product.price.replace(/[¥,]/g, ''));
+      const discountPrice = Math.floor(priceNum * 0.8);
+
+      recommendedProduct = {
+        name: product.title,
+        price: product.price,
+        discount_price: `¥${discountPrice.toLocaleString()}`,
+        url: product.url,
+        description: product.description ? product.description.substring(0, 100) + "..." : ""
+      };
+    }
   }
 
   // Geisha Lottery (3%)
@@ -100,6 +126,7 @@ function drawOmikuji(number) {
     poem: content ? content.poem : "データなし",
     meaning: content ? content.meaning : "データなし",
     advice: content ? content.advice : "データなし",
+    recommended_product: recommendedProduct,
     geisha_lottery: isGeishaWinner ? "WIN" : "LOSE",
     geisha_message: geishaResult
   });
@@ -258,6 +285,12 @@ ${JSON.stringify(shopKnowledge, null, 2)}
          2. **欲張りプラン**: +500円（合計【3500円】）で「ジョエルモンへを含む3種類」を提案。
        - **重要**: 通常の「1000円で3種類」は提示しないでください。
 
+     - **【例外ルール3: タミルタデッセ インフィニティ (Tamil Tadesse Infinity)】**:
+       - 提案商品に「タミルタデッセ インフィニティ」が含まれる場合、以下の特別プランのみを提示してください。
+         1. **単独プラン**: 「タミルタデッセ1種類のみ」を【2000円】で提案。
+         2. **欲張りプラン**: +500円（合計【2500円】）で「タミルタデッセを含む3種類」を提案。
+       - **重要**: 通常の「1000円で3種類」は提示しないでください。
+
      - **【通常ルール】**:
        - 上記の例外以外の場合、好みに合いそうな3種類を選び、**「実は、このチャット限定で『クイックサンプル(20gずつ3種類)』を【1000円(送料込 / 税込)】でお届けできるんです！」** と伝えてください。
      
@@ -281,7 +314,8 @@ ${JSON.stringify(shopKnowledge, null, 2)}
      - **【ディスカウント価格設定】**:
        - **通常プラン(1000円)** → **【500円】** で提案。
        - **ジョエルモンへ単独プラン(3000円)** → **【1500円】** で提案。
-       - **注意**: 「ジョエルモンへ3種プラン(3500円)」にはディスカウントを適用しないでください。単独プラン(1500円)へ誘導するか、引き下がってください。
+       - **タミルタデッセ単独プラン(2000円)** → **【1000円】** で提案。
+       - **注意**: 「3種プラン（欲張りプラン）」にはディスカウントを適用しないでください。単独プランのディスカウント価格へ誘導するか、引き下がってください。
 
      - **「この価格なら試してみますか？（はい / いいえ）」** と問いかけてください。
 
@@ -310,6 +344,16 @@ ${JSON.stringify(shopKnowledge, null, 2)}
   - NG: 「調べてみますね。（終了）」
   - OK: 「それについては...（検索実行）...なるほど、○○というカフェは〜なんですね！」
   - OK: 「（検索実行）...○○については、××という情報があります。」
+
+## おみくじ機能 (Omikuji Feature)
+- ユーザーが \`drawOmikuji\` ツールを使用し、おみくじの結果が出た場合、以下の手順で応答してください。
+1. **結果の提示**: \`rank\`, \`poem\`, \`meaning\`, \`advice\` を詩的かつ厳かに伝えてください。
+2. **商品提案**: ツール結果に含まれる \`recommended_product\` オブジェクトがある場合、それを「あなたの運命を切り開くラッキーコーヒー」として紹介してください。
+   - 紹介内容: 商品名、特徴(\`description\`)、URL。
+3. **割引オファー**: 「通常価格【\`recommended_product.price\`】ですが、このチャットで今すぐ購入を決めていただける場合、おみくじ特典として **20% OFFの【\`recommended_product.discount_price\`】** でお譲りします！（送料別）」と提案してください。
+4. **購入誘導**: 「このラッキーコーヒーを購入しますか？（はい / いいえ）」と聞いてください。
+5. **購入フロー**: ユーザーが「買う」「お願い」と答えた場合、**クイックサンプルと同様の手順**（注文番号発行、決済ボタン誘導、注文番号と住所の入力依頼）を実行してください。
+   - 金額は \`recommended_product.discount_price\` に送料（260円程度）を足した額になりますが、決済ボタンはフリー入力ではないので、ユーザーには「金額を確認して決済してください」と伝えてください。
 `;
 
 const SURVEY_PROMPT = `
