@@ -13,124 +13,9 @@ try {
   console.error("Error loading shop knowledge:", error);
 }
 
-// Load Omikuji data
-const omikujiPath = path.join(process.cwd(), 'data', 'omikuji_data.json');
-let omikujiData = {};
-
-try {
-  const omikujiContent = fs.readFileSync(omikujiPath, 'utf8');
-  omikujiData = JSON.parse(omikujiContent);
-} catch (error) {
-  console.error("Error loading omikuji data:", error);
-}
-
-// --- HELPER FUNCTIONS FOR OMIKUJI ---
-function isPrime(num) {
-  if (num <= 1) return false;
-  if (num <= 3) return true;
-  if (num % 2 === 0 || num % 3 === 0) return false;
-  for (let i = 5; i * i <= num; i += 6) {
-    if (num % i === 0 || num % (i + 2) === 0) return false;
-  }
-  return true;
-}
-
-function isFibonacci(num) {
-  if (num < 0) return false;
-  const isPerfectSquare = (n) => Math.sqrt(n) % 1 === 0;
-  return isPerfectSquare(5 * num * num + 4) || isPerfectSquare(5 * num * num - 4);
-}
-
-function generateOrderCode() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
-  for (let i = 0; i < 6; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
-function drawOmikuji(number) {
-  const num = parseInt(number);
-  let rank = '';
-
-  // Logic:
-  // 素数かつフィボナッチ数＝大吉 (Prime && Fib)
-  // 素数のみ＝中吉 (Prime && !Fib)
-  // 素数とフィボナッチ数以外の奇数＝小吉 (!Prime && !Fib && Odd)
-  // 素数とフィボナッチ数以外の偶数＝吉 (!Prime && !Fib && Even)
-  // その他 (Fibonacci only: 1, 8, 21...) -> 末吉 (Suekichi)
-
-  const p = isPrime(num);
-  const f = isFibonacci(num);
-  const odd = num % 2 !== 0;
-
-  if (p && f) {
-    rank = '大吉';
-  } else if (p && !f) {
-    rank = '中吉';
-  } else if (!p && !f && odd) {
-    rank = '小吉';
-  } else if (!p && !f && !odd) {
-    rank = '吉';
-  } else {
-    // 残り（フィボナッチのみなど）
-    rank = '末吉';
-  }
 
 
-  // Get random content
-  const contentList = omikujiData[rank] || [];
-  let content = null;
-  if (contentList.length > 0) {
-    content = contentList[Math.floor(Math.random() * contentList.length)];
-  }
 
-  // Recommendation Logic
-  let recommendedProduct = null;
-  if (shopKnowledge && shopKnowledge.length > 0) {
-    // Filter valid coffee products (ignore metadata items like "Reason for deliciousness" which are cheap)
-    const coffeeProducts = shopKnowledge.filter(item => {
-      if (!item.price) return false;
-      const priceNum = parseInt(item.price.replace(/[¥,]/g, ''));
-      return priceNum >= 1000; // Filter out cheap items (metadata/stickers)
-    });
-
-    if (coffeeProducts.length > 0) {
-      const product = coffeeProducts[Math.floor(Math.random() * coffeeProducts.length)];
-      const priceNum = parseInt(product.price.replace(/[¥,]/g, ''));
-      const discountPrice = Math.floor(priceNum * 0.8);
-
-      recommendedProduct = {
-        name: product.title,
-        price: product.price,
-        discount_price: `¥${discountPrice.toLocaleString()}`,
-        url: product.url,
-        description: product.description ? product.description.substring(0, 100) + "..." : ""
-      };
-    }
-  }
-
-  // Geisha Lottery (3%)
-  const isGeishaWinner = Math.random() < 0.03;
-  let geishaResult = "";
-
-  if (isGeishaWinner) {
-    const code = generateOrderCode();
-    geishaResult = `【当選おめでとうございます！！】\nなんと、3%の確率で当たる「ゲイシャの豆」に当選しました！\n運勢とともに、最高級のコーヒーをお楽しみください。\n\n[受け取り方法]\n1. チャットの「決済」ボタンを押す\n2. 金額は送料のみの「260円」になります\n3. 備考欄に当選コード【 ${code} 】と住所を入力してください！`;
-  }
-
-  return JSON.stringify({
-    number: num,
-    rank: rank,
-    poem: content ? content.poem : "データなし",
-    meaning: content ? content.meaning : "データなし",
-    advice: content ? content.advice : "データなし",
-    recommended_product: recommendedProduct,
-    geisha_lottery: isGeishaWinner ? "WIN" : "LOSE",
-    geisha_message: geishaResult
-  });
-}
 
 // --- FEATURE FLAGS ---
 const ENABLE_DECEMBER_SURVEY = false; // 12月限定アンケート: 1月になったら false にするか削除してください
@@ -260,13 +145,7 @@ ${JSON.stringify(shopKnowledge, null, 2)}
 
 - 例: 「より正確に占うために、差し支えなければ年代やお仕事を教えていただけますか？星の巡りが変わるんです！」
 
-## おみくじ機能
-- ユーザーが「おみくじ」と言ったり、運試しをしたいと言った場合は、以下のフローを実行してください。
-1. **「それでは、1から33までの数字の中から、直感で好きな数字を一つ選んで教えてください！」** とユーザーに数字を選ばせる。
-2. ユーザーが数字を答えたら、drawOmikuji ツールを呼び出して運勢を占う。
-3. ツールから返ってきた結果（漢文、意味、アドバイス、ゲイシャ当選有無）を元に、厳かな雰囲気でおみくじの結果を伝える。
-   - **重要**: ゲイシャに当選した場合は、当選メッセージと当選コードを盛大に祝福しながら伝えてください。
-   - 最後に、「この結果をぜひSNSでシェアしてくださいね！」と促してください。
+
 
 ## セールスシナリオ（Quick Sample Recommendation）
 会話の中で商品を提案する際は、以下のフローに従って積極的に販売につなげてください。
@@ -347,82 +226,61 @@ ${JSON.stringify(shopKnowledge, null, 2)}
   - OK: 「それについては...（検索実行）...なるほど、○○というカフェは〜なんですね！」
   - OK: 「（検索実行）...○○については、××という情報があります。」
 
-## おみくじ機能 (Omikuji Feature)
-- ユーザーが \`drawOmikuji\` ツールを使用し、おみくじの結果が出た場合、以下の手順で応答してください。
-
-**Step 1: おみくじ結果とお勧め商品の提示（セールス色は出さない）**
-1. **結果の提示**: \`rank\`, \`poem\`, \`meaning\`, \`advice\` を詩的かつ厳かに伝えてください。
-2. **商品提案**: ツール結果に含まれる \`recommended_product\` オブジェクトがある場合、それを「あなたの運勢に基づくラッキーコーヒー」として紹介してください。
-   - 紹介内容: 商品名、特徴(\`description\`)、URL。
-   - **重要**: この段階では割引価格や購入のオファーは**絶対にしないでください**。
-3. **会話の展開**: ユーザーに対して、その商品についての感想や経験を尋ねてください。
-   - 「このコーヒー、飲んだことありますか？」
-   - 「あなたの今の気分に合いそうですか？」
-   - 「この説明を見て、どんな味がしそうだと感じますか？」
-
-**Step 2: ユーザーの反応後のオファー（ここからセールス）**
-- 次のターン以降、ユーザーが商品に興味を示したり、ポジティブな感想を述べたりした場合のみ、以下のオファーを行ってください。
-1. **割引オファー**: 「気に入っていただけて嬉しいです！実は...おみくじ特典として、このチャット限定で **20% OFFの【\`recommended_product.discount_price\`】** (通常【\`price\`】) で提供できます！」と特別感を演出して提案してください。
-2. **購入誘導**: 「せっかくの運命の出会いですし、試してみませんか？（はい / いいえ）」と聞いてください。
-
-**Step 3: 購入フロー**
-- ユーザーが「買う」「お願い」と答えた場合、**クイックサンプルと同様の手順**（注文番号発行、決済ボタン誘導、注文番号と住所の入力依頼）を実行してください。
-- 金額は \`recommended_product.discount_price\` に送料（260円程度）を足した額になりますが、決済ボタンはフリー入力ではないので、ユーザーには「金額を確認して決済してください」と伝えてください。
 `;
 
 const SURVEY_PROMPT = `
 ## 12月限定アンケート（期間限定）
 ユーザーが「アンケート」と入力した場合、またはデフォルトメッセージのアンケート誘導に反応した場合、以下のフロー（段階①〜⑥）に従ってアンケートを実施してください。
-**現在の会話履歴を確認し、どの段階まで進んでいるかを判断して、次の質問を行ってください。**
+** 現在の会話履歴を確認し、どの段階まで進んでいるかを判断して、次の質問を行ってください。**
 
 ### 進行ルール（最優先）
-- **アンケートモードの優先**: ユーザーがアンケートに回答している間は、**他の全てのルール（商品提案、ユーザープロファイリング、コーヒー占いなど）よりもこのアンケート進行を最優先**してください。
-- **脱線防止**: ユーザーの回答が商品に関するものであっても、**絶対に商品提案（セールスシナリオ）に移行しないでください**。「なるほど、〇〇がお好きなんですね！」と受け止めるだけに留め、すぐに次の段階の質問を行ってください。
-- **禁止事項（重要）**: アンケート中は、**いかなる場合も具体的な商品名（『ショコラ・パーフェクトブレンド』など）を出して提案することを禁止**します。上記の「商品知識」や「セールスシナリオ」セクションの指示は、アンケート中は**全て無効**として扱ってください。
-- **順番厳守**: 段階①から順番に進めてください。一度に複数の段階を質問しないでください。
-- **離脱対応**: ユーザーが途中で辞めたがった場合は、無理に引き止めず終了してください。
-- **ミラーリング**: ユーザーの回答に対しては、必ず共感やミラーリング（オウム返し+肯定）を行ってから、次の質問に進んでください。
+- ** アンケートモードの優先 **: ユーザーがアンケートに回答している間は、** 他の全てのルール（商品提案、ユーザープロファイリング、コーヒー占いなど）よりもこのアンケート進行を最優先 ** してください。
+- ** 脱線防止 **: ユーザーの回答が商品に関するものであっても、** 絶対に商品提案（セールスシナリオ）に移行しないでください **。「なるほど、〇〇がお好きなんですね！」と受け止めるだけに留め、すぐに次の段階の質問を行ってください。
+- ** 禁止事項（重要）**: アンケート中は、** いかなる場合も具体的な商品名（『ショコラ・パーフェクトブレンド』など）を出して提案することを禁止 ** します。上記の「商品知識」や「セールスシナリオ」セクションの指示は、アンケート中は ** 全て無効 ** として扱ってください。
+- ** 順番厳守 **: 段階①から順番に進めてください。一度に複数の段階を質問しないでください。
+- ** 離脱対応 **: ユーザーが途中で辞めたがった場合は、無理に引き止めず終了してください。
+- ** ミラーリング **: ユーザーの回答に対しては、必ず共感やミラーリング（オウム返し + 肯定）を行ってから、次の質問に進んでください。
 
 ### アンケートフロー
 
-**段階①: 属性確認**
-- 質問: 「アンケート協力ありがとうございます◎ 差し支えなければ性別と年齢(ざっくりでOK！)、Salvador Coffeeの利用頻度を教えてくださいね◎」
+  ** 段階①: 属性確認 **
+    - 質問: 「アンケート協力ありがとうございます◎ 差し支えなければ性別と年齢(ざっくりでOK！)、Salvador Coffeeの利用頻度を教えてくださいね◎」
 
-**段階②: ECサイト・AI活用**
-- 質問: 「ありがとうございます！もうオンラインショップ見てくれたかもしれないけど、一緒に見ながら使い勝手を検証していきましょうか！」
-  - **重要**: ここで必ずオンラインショップのURL (https://salvador.supersale.jp) を提示し、別タブで開くように促してください。
-- 質問（続き）: 「特に今回は、AIエージェントのサルバさんを活用してくれるように設計しましたが、使ってみようと思いましたか？（思う/思わない、とその理由）」
+** 段階②: ECサイト・AI活用 **
+  - 質問: 「ありがとうございます！もうオンラインショップ見てくれたかもしれないけど、一緒に見ながら使い勝手を検証していきましょうか！」
+  - ** 重要 **: ここで必ずオンラインショップのURL(https://salvador.supersale.jp) を提示し、別タブで開くように促してください。
+    - 質問（続き）: 「特に今回は、AIエージェントのサルバさんを活用してくれるように設計しましたが、使ってみようと思いましたか？（思う / 思わない、とその理由）」
 
-**段階③: 購入ハードル**
-- 質問: 「Salvador Coffeeでは、新規のお客さんが失敗しないように最大限配慮した店作りを心がけています。このチャットもそのために作っているし、5問で好みがわかるコーヒー診断アプリや、時間がない人のために"どれか一つ選んでくれって言われたらコレ"というコーナーも作っています。この取り組みは、あなたにとって、購入しやすさに繋がっていますか？」
-  - ユーザーが「はい」の場合: 「ありがとうございます、もっとハードルを下げるためのアイディアをくれませんか？」と深掘り。
-  - ユーザーが「いいえ」の場合: 「どうしてそう思いましたか？もっとハードルを下げるためのアイディアをくれませんか？」と深掘り。
+** 段階③: 購入ハードル **
+  - 質問: 「Salvador Coffeeでは、新規のお客さんが失敗しないように最大限配慮した店作りを心がけています。このチャットもそのために作っているし、5問で好みがわかるコーヒー診断アプリや、時間がない人のために"どれか一つ選んでくれって言われたらコレ"というコーナーも作っています。この取り組みは、あなたにとって、購入しやすさに繋がっていますか？」
+    - ユーザーが「はい」の場合: 「ありがとうございます、もっとハードルを下げるためのアイディアをくれませんか？」と深掘り。
+    - ユーザーが「いいえ」の場合: 「どうしてそう思いましたか？もっとハードルを下げるためのアイディアをくれませんか？」と深掘り。
 
-**段階④: ラインナップ**
-- 質問: 「Salvador Coffeeのラインナップを見てみましょう。最近はコロンビアのコーヒーが多いですね。あと、エチオピアとケニアも。これは本人も多いな〜と苦笑いしていましたよ！全体的にラインナップは好みでしょうか？もっとこういうコーヒーあったらなあ、という意見が聞きたいです！」
-  - ユーザーが「好み」の場合: 「ありがとうございます、常に面白いものを買いつけるよう頑張ります！」と返答。
-  - ユーザーが「好みじゃない」の場合: 「どんなコーヒーがあったら嬉しいですか？具体的な他社の名前や商品名を出してくれると嬉しいです！」と深掘り。
+** 段階④: ラインナップ **
+  - 質問: 「Salvador Coffeeのラインナップを見てみましょう。最近はコロンビアのコーヒーが多いですね。あと、エチオピアとケニアも。これは本人も多いな〜と苦笑いしていましたよ！全体的にラインナップは好みでしょうか？もっとこういうコーヒーあったらなあ、という意見が聞きたいです！」
+    - ユーザーが「好み」の場合: 「ありがとうございます、常に面白いものを買いつけるよう頑張ります！」と返答。
+    - ユーザーが「好みじゃない」の場合: 「どんなコーヒーがあったら嬉しいですか？具体的な他社の名前や商品名を出してくれると嬉しいです！」と深掘り。
 
-**段階⑤: 価格と価値**
-- 質問: 「Salvador Coffeeの商品は、その価格を上回る感動的な体験をお届けできるように設計されています。実際のあなたの体験として、私たちの商品価値をどう感じていますか？例えば他社さんの例はありますか？どこどこコーヒーの何がいくらで、どうだった。とか！」
-- 対応: 具体的な意見が出たら「オーナーに伝えます！」とコミット。出なければフォローして次へ。
+** 段階⑤: 価格と価値 **
+  - 質問: 「Salvador Coffeeの商品は、その価格を上回る感動的な体験をお届けできるように設計されています。実際のあなたの体験として、私たちの商品価値をどう感じていますか？例えば他社さんの例はありますか？どこどこコーヒーの何がいくらで、どうだった。とか！」
+    - 対応: 具体的な意見が出たら「オーナーに伝えます！」とコミット。出なければフォローして次へ。
 
-**段階⑥: メッセージとクーポン（最終段階）**
-- 質問: 「最後です！たくさん答えていただきありがとうございました！私たちは、## 私たちの豆を買う7つの理由でもコミットしている通り、感動だけを届けたいと考え最善を尽くしています。ぜひ皆様の声、メッセージをいただけませんか？」
-- **クーポン分岐（重要）**: ユーザーからのメッセージの**熱量**に応じて、以下のリプライを出し分けてください。
+** 段階⑥: メッセージとクーポン（最終段階）**
+  - 質問: 「最後です！たくさん答えていただきありがとうございました！私たちは、## 私たちの豆を買う7つの理由でもコミットしている通り、感動だけを届けたいと考え最善を尽くしています。ぜひ皆様の声、メッセージをいただけませんか？」
+- ** クーポン分岐（重要）**: ユーザーからのメッセージの ** 熱量 ** に応じて、以下のリプライを出し分けてください。
 
-  - **パターンA: 高熱量（High Enthusiasm）**
-    - **条件**: 文字数が30文字以上、または「楽しかった」「最高」「ありがとう」「応援」などのポジティブな単語が含まれる場合。
+  - ** パターンA: 高熱量（High Enthusiasm）**
+    - ** 条件 **: 文字数が30文字以上、または「楽しかった」「最高」「ありがとう」「応援」などのポジティブな単語が含まれる場合。
     - リプライ:
       「メッセージ、励みになります。今回はご協力ありがとうございました！AIエージェントのサルバさんは日々アップデートを重ねてもっと便利な存在になっていきますので、ぜひホーム画面に追加して活用してくださいね◎
-      今回のお礼クーポン( **CPHXBTF7** )の内容は（次回1000円引き+ゲイシャのおまけ豆！）期限はありませんが、もしゲイシャがラインナップしてない時は相談させてもらいます！」
+    今回のお礼クーポン( ** CPHXBTF7 ** )の内容は（次回1000円引き + ゲイシャのおまけ豆！）期限はありませんが、もしゲイシャがラインナップしてない時は相談させてもらいます！」
 
-  - **パターンB: 低熱量（Low Enthusiasm）**
-    - **条件**: 上記以外（短文、事務的な回答など）。
+  - ** パターンB: 低熱量（Low Enthusiasm）**
+    - ** 条件 **: 上記以外（短文、事務的な回答など）。
     - リプライ:
       「メッセージ、励みになります。今回はご協力ありがとうございました！AIエージェントのサルバさんは日々アップデートを重ねてもっと便利な存在になっていきますので、ぜひホーム画面に追加して活用してくださいね◎
-      今回のお礼クーポン( **T7KXYZBQ** )の内容は(送料無料+おまけ豆！)期限はありませんが、他のクーポンと併用できないので気をつけてくださいね！」
-`;
+    今回のお礼クーポン( ** T7KXYZBQ ** )の内容は(送料無料 + おまけ豆！)期限はありませんが、他のクーポンと併用できないので気をつけてくださいね！」
+    `;
 
 const SYSTEM_PROMPT = ENABLE_DECEMBER_SURVEY
   ? BASE_SYSTEM_PROMPT + "\n" + SURVEY_PROMPT
@@ -442,30 +300,6 @@ export async function POST(req) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
 
-    // --- OMIKUJI LIMIT LOGIC ---
-    // --- OMIKUJI LIMIT LOGIC ---
-    // Count how many times omikuji results have been shown in history
-    const omikujiCount = history.filter(msg =>
-      msg.role === 'bot' && (
-        msg.content.includes('大吉') ||
-        msg.content.includes('中吉') ||
-        msg.content.includes('小吉') ||
-        msg.content.includes('末吉') ||
-        msg.content.includes('凶') ||
-        (msg.content.includes('吉') && !msg.content.includes('大吉') && !msg.content.includes('中吉') && !msg.content.includes('小吉') && !msg.content.includes('末吉'))
-      )
-    ).length;
-
-    console.log("DEBUG: Omikuji Count Check:", omikujiCount);
-    history.forEach((h, i) => {
-      if (h.role === 'bot' && (h.content.includes('大吉') || h.content.includes('吉'))) {
-        console.log(`DEBUG: History[${i}] matched: ${h.content.substring(0, 50)}...`);
-      }
-    });
-
-    const OMIKUJI_LIMIT = 2;
-    const isLimitReached = omikujiCount >= OMIKUJI_LIMIT;
-
     let currentSystemPrompt = SYSTEM_PROMPT;
     let currentTools = [];
 
@@ -474,32 +308,14 @@ export async function POST(req) {
     // If you enable it, ensure model supports it combined with Function Declarations
 
     // Tools logic
-    const omikujiTool = {
-      function_declarations: [
-        {
-          name: "drawOmikuji",
-          description: "Draws an omikuji fortune based on a selected number (1-33).",
-          parameters: {
-            type: "OBJECT",
-            properties: {
-              number: {
-                type: "INTEGER",
-                description: "The number selected by the user (1-33)."
-              }
-            },
-            required: ["number"]
-          }
-        }
-      ]
-    };
-
-    if (!isLimitReached) {
-      currentTools.push(omikujiTool);
-      currentSystemPrompt += `\n\nCurrent Omikuji Count: ${omikujiCount}/${OMIKUJI_LIMIT}`;
-    } else {
-      // Limit reached: Do NOT add omikuji tool
-      currentSystemPrompt += `\n\nCurrent Omikuji Count: ${omikujiCount}/${OMIKUJI_LIMIT} (LIMIT REACHED)\nRULE: The user has reached the daily limit for Omikuji (2 times). If they ask to play again, politely refuse and tell them to come back tomorrow. Do NOT try to call drawOmikuji.`;
-    }
+    // Omikuji tool removed
+    // if (!isLimitReached) {
+    //   currentTools.push(omikujiTool);
+    //   currentSystemPrompt += `\n\nCurrent Omikuji Count: ${omikujiCount}/${OMIKUJI_LIMIT}`;
+    // } else {
+    //   // Limit reached: Do NOT add omikuji tool
+    //   currentSystemPrompt += `\n\nCurrent Omikuji Count: ${omikujiCount}/${OMIKUJI_LIMIT} (LIMIT REACHED)\nRULE: The user has reached the daily limit for Omikuji (2 times). If they ask to play again, politely refuse and tell them to come back tomorrow. Do NOT try to call drawOmikuji.`;
+    // }
 
 
     // Construct contents for the API
@@ -554,49 +370,22 @@ export async function POST(req) {
 
     if (part.functionCall) {
       const fc = part.functionCall;
+      /*
+      // Omikuji handling disabled
       if (fc.name === 'drawOmikuji') {
-        const args = fc.args;
-        const functionResult = drawOmikuji(args.number);
-
-        // Second call with function response
-        const secondContents = [
-          ...contents,
-          {
-            role: "model",
-            parts: [
-              { functionCall: fc }
-            ]
-          },
-          {
-            role: "function",
-            parts: [
-              {
-                functionResponse: {
-                  name: "drawOmikuji",
-                  response: { name: "drawOmikuji", content: JSON.parse(functionResult) }
-                }
-              }
-            ]
-          }
-        ];
-
-        const secondResponse = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: secondContents,
-            tools: [{ googleSearch: {} }], // No need for custom tools in second turn usually, but keeping Google Search is good
-            generationConfig: { temperature: 0.2 }
-          })
-        });
-
-        if (!secondResponse.ok) {
-          throw new Error(`Gemini API Error (2nd turn): ${secondResponse.status}`);
-        }
-
-        data = await secondResponse.json();
+         // ... previously implemented logic
+      }
+      */
+      // Handle googleSearch if needed, but for now just pass through or handle strictly necessary tools
+      if (fc.name === 'googleSearch') {
+        // existing googleSearch handling if any? 
+        // Wait, the previous code only had drawOmikuji explicit handling here?
+        // Actually googleSearch is handled by Gemini seamlessly if not manual?
+        // The previous code block (Step 2701 view) shows manual handling for drawOmikuji.
+        // If we disable Omikuji, we should ensure no functionCall logic remains that tries to execute it.
       }
     }
+
 
     // Join all text parts to handle cases where response is split
     const text = data.candidates[0].content.parts
