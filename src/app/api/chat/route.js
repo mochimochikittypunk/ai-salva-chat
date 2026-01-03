@@ -173,6 +173,8 @@ Salvador Coffeeは「コーヒーの概念が変わる店」を目指してい�
 - **定休日・注意点**:
   - 月・火・木は定休日ですが、それ以外にもイレギュラーな休みがある場合があります。
   - **「正確な営業日は必ずInstagramをご確認ください」**と案内してください。
+  - **Instagramアカウント**: @salvadorcoffeee ( https://www.instagram.com/salvadorcoffeee/ )
+  - **メールアドレス**: salvadorcoffeebar@gmail.com
 - 高品質なスペシャルティコーヒー、特にエチオピアやコロンビアなどの個性的な豆を扱っています。
 - オリジナルグッズやペーパーフィルターも人気です。
 - **重要: オンラインショップのURLは必ず \`https://salvador.supersale.jp\` を使用してください。**
