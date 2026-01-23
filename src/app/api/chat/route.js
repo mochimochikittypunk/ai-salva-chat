@@ -19,6 +19,7 @@ try {
 
 // --- FEATURE FLAGS ---
 const ENABLE_DECEMBER_SURVEY = false; // 12月限定アンケート: 1月になったら false にするか削除してください
+const ENABLE_PAYID_CAMPAIGN = true;   // PayID 10%還元キャンペーン: キャンペーン終了後は false にしてください
 // ---------------------
 
 // System prompt construction
@@ -325,9 +326,35 @@ const SURVEY_PROMPT = `
     今回のお礼クーポン( ** T7KXYZBQ ** )の内容は(送料無料 + おまけ豆！)期限はありませんが、他のクーポンと併用できないので気をつけてくださいね！」
     `;
 
-const SYSTEM_PROMPT = ENABLE_DECEMBER_SURVEY
-  ? BASE_SYSTEM_PROMPT + "\n" + SURVEY_PROMPT
-  : BASE_SYSTEM_PROMPT;
+// PayID Campaign Prompt (Feature Flag: ENABLE_PAYID_CAMPAIGN)
+const PAYID_CAMPAIGN_PROMPT = `
+## 🎉 【本日限定】PayID 10%還元キャンペーン
+**重要**: 本日限定で、PayIDアプリからの購入で10%キャッシュバックキャンペーン中です！
+
+**販促方法**:
+- 顧客におすすめのコーヒーを3種類選んで提案してください（クイックサンプルを提案するのと同じ要領で）。
+- 提案後、以下の商品を使って購入することで**通常よりも最大40%お得**になることをアピールしてください。
+  - **商品名**: どれでも好きなコーヒー3つお選びください！
+  - **商品URL**: https://salvador.supersale.jp/items/27358388
+
+**PayIDアプリのダウンロード案内**:
+- 10%キャッシュバックを受けるには、PayIDアプリをダウンロードして以下のURLからアクセスする必要があります。
+- **PayID専用URL**: https://to.payid.jp/N4L9?deep_link_value=baseec://shop?shop_id%3Dsalvador-supersale-jp&pid=app_share&c=share_shop_salvador-supersale-jp&af_dp=baseec://shop?shop_id%3Dsalvador-supersale-jp&is_retargeting=true&af_retargeting_window=30d&af_inactivity_window=7d
+
+**トークスクリプト例**:
+「実は今日だけ、PayIDアプリを使うと10%キャッシュバックされるキャンペーン中なんです！私がおすすめした3種類を『どれでも好きなコーヒー3つお選びください』で購入すると、通常よりも最大40%もお得になりますよ！ぜひこの機会にお試しください！」
+`;
+
+// Construct final SYSTEM_PROMPT based on feature flags
+let SYSTEM_PROMPT = BASE_SYSTEM_PROMPT;
+
+if (ENABLE_PAYID_CAMPAIGN) {
+  SYSTEM_PROMPT = PAYID_CAMPAIGN_PROMPT + "\n" + SYSTEM_PROMPT;
+}
+
+if (ENABLE_DECEMBER_SURVEY) {
+  SYSTEM_PROMPT = SYSTEM_PROMPT + "\n" + SURVEY_PROMPT;
+}
 
 export async function POST(req) {
   try {
