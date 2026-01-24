@@ -19,7 +19,7 @@ try {
 
 // --- FEATURE FLAGS ---
 const ENABLE_DECEMBER_SURVEY = false; // 12月限定アンケート: 1月になったら false にするか削除してください
-const ENABLE_PAYID_CAMPAIGN = true;   // PayID 10%還元キャンペーン: キャンペーン終了後は false にしてください
+const ENABLE_PAYID_CAMPAIGN = false;   // PayID 10%還元キャンペーン: キャンペーン終了後は false にしてください
 // ---------------------
 
 // System prompt construction
