@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
+import remarkGfm from 'remark-gfm';
 
 // Simple UUID generator
 function generateUUID() {
@@ -150,10 +153,17 @@ export default function Home() {
                                 {msg.role === 'bot' ? 'AI Salva-san' : 'You'}
                             </div>
                             {msg.content.split('\n').map((line, i) => (
-                                <span key={i}>
+                                <ReactMarkdown
+                                    key={i}
+                                    remarkPlugins={[remarkBreaks, remarkGfm]}
+                                    components={{
+                                        a: ({ node, ...props }) => (
+                                            <a {...props} target="_blank" rel="noopener noreferrer" style={{ color: '#00d4ff', textDecoration: 'underline' }} />
+                                        )
+                                    }}
+                                >
                                     {line}
-                                    <br />
-                                </span>
+                                </ReactMarkdown>
                             ))}
                         </div>
                     ))}

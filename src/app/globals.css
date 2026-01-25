@@ -116,6 +116,12 @@ a:hover {
   line-height: 1.7;
   position: relative;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  overflow-wrap: break-word;
+  /* Ensure long words break */
+  word-wrap: break-word;
+  /* Legacy support */
+  word-break: break-word;
+  /* Non-standard but helpful */
 }
 
 .message.user {
