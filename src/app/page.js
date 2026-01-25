@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
+import TermsModal from '../components/TermsModal';
 
 // Simple UUID generator
 function generateUUID() {
@@ -24,6 +25,7 @@ export default function Home() {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [sessionId, setSessionId] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
@@ -142,6 +144,7 @@ export default function Home() {
                         SALVADOR COFFEE
                     </a>
                     <div className="logo-sub">AI Assistant</div>
+                    <div className="header-link" onClick={() => setIsModalOpen(true)}>利用規約</div>
                 </div>
             </header>
 
@@ -189,6 +192,8 @@ export default function Home() {
                     </button>
                 </form>
             </div>
+
+            <TermsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
         </div>
     );
 }
