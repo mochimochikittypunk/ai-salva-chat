@@ -155,19 +155,20 @@ export default function Home() {
                             <div className="message-role">
                                 {msg.role === 'bot' ? 'AI Salva-san' : 'You'}
                             </div>
-                            {msg.content.split('\n').map((line, i) => (
-                                <ReactMarkdown
-                                    key={i}
-                                    remarkPlugins={[remarkBreaks, remarkGfm]}
-                                    components={{
-                                        a: ({ node, ...props }) => (
-                                            <a {...props} target="_blank" rel="noopener noreferrer" style={{ color: '#00d4ff', textDecoration: 'underline' }} />
-                                        )
-                                    }}
-                                >
-                                    {line}
-                                </ReactMarkdown>
-                            ))}
+                            <ReactMarkdown
+                                remarkPlugins={[remarkBreaks, remarkGfm]}
+                                components={{
+                                    a: ({ node, ...props }) => (
+                                        <a {...props} target="_blank" rel="noopener noreferrer" style={{ color: '#00d4ff', textDecoration: 'underline' }} />
+                                    ),
+                                    // Custom renderer for code blocks to prevent overflow
+                                    pre: ({ node, ...props }) => (
+                                        <pre {...props} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowX: 'auto' }} />
+                                    )
+                                }}
+                            >
+                                {msg.content}
+                            </ReactMarkdown>
                         </div>
                     ))}
                     {isLoading && <div className="loading">AIサルバさんが入力中...</div>}
