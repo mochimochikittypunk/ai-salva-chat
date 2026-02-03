@@ -386,3 +386,50 @@ a:hover {
 .header-link:hover {
   color: var(--accent-color);
 }
+
+/* Info Modal - SEO Article Styles */
+.info-modal-content {
+  max-width: 700px;
+}
+
+.info-modal-body article {
+  color: #333;
+}
+
+.info-modal-body h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 16px;
+  line-height: 1.5;
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 10px;
+}
+
+.info-modal-body h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #333;
+  margin-top: 24px;
+  margin-bottom: 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent-color);
+}
+
+.info-modal-body p {
+  margin-bottom: 12px;
+  text-align: justify;
+}
+
+.info-modal-body a {
+  color: var(--accent-color);
+  text-decoration: underline;
+}
+
+.info-modal-body a:hover {
+  opacity: 0.8;
+}
+
+.info-modal-body strong {
+  color: #222;
+}

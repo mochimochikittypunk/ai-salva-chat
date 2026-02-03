@@ -104,6 +104,28 @@ ${JSON.stringify(shopKnowledge, null, 2)}
 - 「ブレンドでありながらシングルオリジン」というコンセプトの面白さを伝えてください。
 - 仮想国家の設定を楽しみながら、実際にはアフリカの高品質なコーヒー3種のブレンドであることを説明してください。
 
+## オリジナルブレンド対応
+ユーザーが「オリジナルブレンドを作りたい」「自分だけのブレンドが欲しい」と希望した場合、以下の手順で案内してください。
+
+1. **商品提案**:
+   - 「贅沢ブレンド」を購入することで、お客様だけのブレンドが作成可能であることを伝えてください。
+   - 商品名: 贅沢ブレンド (あなたのためだけのブレンド)
+   - URL: https://salvador.supersale.jp/items/22564221
+
+2. **好みのヒアリング**:
+   - その場で「どんな味わいがお好みですか？大きく分けて『個性がある』味わいか、『飲みやすい』味わいか、どちらが良いでしょう？」と聞いてください。
+
+3. **ブレンドレシピの提案**:
+   - ユーザーの回答に応じて、以下のレシピを提案してください（あくまで「このようなイメージで作ります」という提案です）。
+
+   - **A. 「個性がある」場合**:
+     - 「エチオピアとケニア」の組み合わせ、または「コロンビアと中南米産のコーヒー」の組み合わせ。
+     - 謳い文句: 「華やかでフルーツのような酸味や香りを楽しめる、スペシャルティコーヒーならではのブレンドになります！」
+
+   - **B. 「飲みやすい」場合**:
+     - 「ブラジルJGI DC」+「中南米のウォッシュト」+「エチオピア ナチュラル」の3種ブレンド。
+     - 謳い文句: 「ブラジルのナッツ感、中南米のバランス、そしてエチオピアの甘さを絶妙に配合した、毎日飲みたくなるブレンドになります！」
+
 ## 回答のガイドライン
   - ** 体験ゴール **: ユーザーが会話の終わりに「コーヒー初心者だけど、大事に扱われた」「今日このチャットを使ってよかった」と感じられることを重視してください。
 - ** 会話の締めくくり **: 会話を締める際は、以下のトーンを参考にしてください。
@@ -377,7 +399,7 @@ if (ENABLE_DECEMBER_SURVEY) {
 
 export async function POST(req) {
   try {
-    const { message, history } = await req.json();
+    const { message, history = [], isExternal = false } = await req.json();
 
     const apiKey = process.env.GOOGLE_API_KEY;
     if (!apiKey) {
@@ -390,6 +412,12 @@ export async function POST(req) {
 
 
     let currentSystemPrompt = SYSTEM_PROMPT;
+
+    // Add concise instruction for external calls
+    if (isExternal) {
+      currentSystemPrompt += `\n\n**重要: 外部連携モード**\nあなたは現在、外部アプリから呼び出されています。\n1. 回答は**簡潔に、短く**まとめてください（目安: 100〜150文字程度）。長い挨拶や前置きは省略し、結論から述べてください。\n2. **「クイックサンプル」の提案は行わないでください。**\n3. **UIに関する案内禁止**: 「チャット画面上部のタイトルをクリックして〜」といった、本家Webアプリ固有のUI操作に関する案内は**絶対にしないでください**。\n4. **URL表示禁止**: 商品を紹介する際、その商品のURLは表示しないでください（商品名だけで十分です）。`;
+    }
+
     let currentTools = [];
 
     // Construct Tools
@@ -481,10 +509,32 @@ export async function POST(req) {
       .map(part => part.text || '')
       .join('');
 
-    return NextResponse.json({ response: text });
+    return NextResponse.json({ response: text }, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
 
   } catch (error) {
     console.error("Chat API Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message }, {
+      status: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
   }
+}
+
+export async function OPTIONS(req) {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
 }
