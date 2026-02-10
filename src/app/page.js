@@ -84,6 +84,9 @@ export default function Home() {
         setInput('');
         setIsLoading(true);
 
+        // Add placeholder for bot response
+        setMessages(prev => [...prev, { role: 'bot', content: '' }]);
+
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
@@ -92,20 +95,65 @@ export default function Home() {
                 },
                 body: JSON.stringify({
                     message: userMessage.content,
-                    history: messages.map(m => ({ role: m.role, content: m.content }))
+                    history: messages.map(m => ({ role: m.role, content: m.content })),
+                    stream: true, // Enable streaming
                 }),
             });
 
-            const data = await response.json();
-
-            if (data.error) {
-                throw new Error(data.error);
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Network response was not ok');
             }
 
-            setMessages(prev => [...prev, { role: 'bot', content: data.response }]);
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let botContent = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const dataStr = line.slice(6);
+                        if (dataStr === '[DONE]') continue;
+
+                        try {
+                            const data = JSON.parse(dataStr);
+                            if (data.text) {
+                                botContent += data.text;
+
+                                // Update the last message (bot response)
+                                setMessages(prev => {
+                                    const newMessages = [...prev];
+                                    const lastMsg = newMessages[newMessages.length - 1];
+                                    if (lastMsg && lastMsg.role === 'bot') {
+                                        newMessages[newMessages.length - 1] = { ...lastMsg, content: botContent };
+                                    }
+                                    return newMessages;
+                                });
+                            }
+                        } catch (e) {
+                            console.error('Error parsing JSON:', e);
+                        }
+                    }
+                }
+            }
+
         } catch (error) {
             console.error('Error:', error);
-            setMessages(prev => [...prev, { role: 'bot', content: `申し訳ありません。エラーが発生しました。\n詳細: ${error.message}` }]);
+            setMessages(prev => {
+                const newMessages = [...prev];
+                // Remove the empty placeholder if it failed immediately, or append error
+                const lastMsg = newMessages[newMessages.length - 1];
+                if (lastMsg && lastMsg.role === 'bot') {
+                    newMessages[newMessages.length - 1] = { ...lastMsg, content: `申し訳ありません。エラーが発生しました。\n詳細: ${error.message}` };
+                }
+                return newMessages;
+            });
         } finally {
             setIsLoading(false);
         }
