@@ -96,7 +96,7 @@ export default function Home() {
                 body: JSON.stringify({
                     message: userMessage.content,
                     history: messages.map(m => ({ role: m.role, content: m.content })),
-                    stream: true, // Enable streaming
+                    stream: false, // ストリーミングをオフにする
                 }),
             });
 
@@ -105,43 +105,18 @@ export default function Home() {
                 throw new Error(data.error || 'Network response was not ok');
             }
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let botContent = '';
+            const data = await response.json();
+            const botContent = data.response;
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n');
-
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        const dataStr = line.slice(6);
-                        if (dataStr === '[DONE]') continue;
-
-                        try {
-                            const data = JSON.parse(dataStr);
-                            if (data.text) {
-                                botContent += data.text;
-
-                                // Update the last message (bot response)
-                                setMessages(prev => {
-                                    const newMessages = [...prev];
-                                    const lastMsg = newMessages[newMessages.length - 1];
-                                    if (lastMsg && lastMsg.role === 'bot') {
-                                        newMessages[newMessages.length - 1] = { ...lastMsg, content: botContent };
-                                    }
-                                    return newMessages;
-                                });
-                            }
-                        } catch (e) {
-                            console.error('Error parsing JSON:', e);
-                        }
-                    }
+            // Update the last message (bot response)
+            setMessages(prev => {
+                const newMessages = [...prev];
+                const lastMsg = newMessages[newMessages.length - 1];
+                if (lastMsg && lastMsg.role === 'bot') {
+                    newMessages[newMessages.length - 1] = { ...lastMsg, content: botContent };
                 }
-            }
+                return newMessages;
+            });
 
         } catch (error) {
             console.error('Error:', error);
