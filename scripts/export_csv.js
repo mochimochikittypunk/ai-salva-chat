@@ -35,9 +35,12 @@ async function exportCsv() {
         const rawData = fs.readFileSync(DATA_FILE, 'utf8');
         const products = JSON.parse(rawData);
 
-        // 1. Base Filter: Exclude "SOLD OUT"
+        // 1. Base Filter: Exclude "SOLD OUT" and discontinued products
         const availableProducts = products.filter(product => {
-            return !product.title.toUpperCase().includes('SOLD OUT');
+            if (product.title.toUpperCase().includes('SOLD OUT')) return false;
+            if (product.discontinued) return false;
+            if (product.description && product.description.includes('こちらは終売商品です')) return false;
+            return true;
         });
 
         // 2. Identification Logic (V6/V7)

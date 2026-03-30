@@ -12,6 +12,9 @@ curl -L -A "$USER_AGENT" "https://salvador.supersale.jp/?page=2" > shop_page2.ht
 echo "Fetching page 3..."
 curl -L -A "$USER_AGENT" "https://salvador.supersale.jp/?page=3" > shop_page3.html
 
+echo "Fetching discontinued products category..."
+curl -L -A "$USER_AGENT" "https://salvador.supersale.jp/categories/7210231" > shop_discontinued.html
+
 echo "Parsing HTML and updating knowledge base..."
 node scripts/parse_shop_html.js > data/shop_knowledge.json
 

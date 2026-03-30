@@ -2,7 +2,28 @@ const fs = require('fs');
 const cheerio = require('cheerio');
 const path = require('path');
 
-// List of HTML files to parse
+// --- Step 1: Parse the discontinued products category page to get their URLs ---
+const discontinuedUrls = new Set();
+const discontinuedHtmlPath = path.join(__dirname, '../shop_discontinued.html');
+
+if (fs.existsSync(discontinuedHtmlPath)) {
+    const discontinuedHtml = fs.readFileSync(discontinuedHtmlPath, 'utf8');
+    const $d = cheerio.load(discontinuedHtml);
+
+    $d('li[class*="items-grid_itemListLI_"]').each((i, el) => {
+        const link = $d(el).find('a[href*="/items/"]');
+        const href = link.attr('href');
+        if (href) {
+            const url = href.startsWith('http') ? href : `https://salvador.supersale.jp${href}`;
+            discontinuedUrls.add(url);
+        }
+    });
+    console.error(`[INFO] Found ${discontinuedUrls.size} discontinued product URLs from category page.`);
+} else {
+    console.error('[WARN] shop_discontinued.html not found. Discontinued detection will rely on description text only.');
+}
+
+// --- Step 2: Parse the main shop pages ---
 const htmlFiles = ['shop_page1.html', 'shop_page2.html', 'shop_page3.html'];
 const products = [];
 
@@ -13,30 +34,12 @@ htmlFiles.forEach(fileName => {
     const html = fs.readFileSync(htmlPath, 'utf8');
     const $ = cheerio.load(html);
 
-    // Adjust selectors based on typical BASE shop themes or generic structure
-    // Looking for list items that likely contain product info
-    // Common BASE classes: .item-list, .product-list, .item, .product
-    // We'll try to be generic or look for common patterns
-
-    // Updated strategy based on actual HTML content
-    // Items are in <li> with class starting with 'items-grid_itemListLI_'
-    // Inside, there is an anchor <a> with class 'items-grid_anchor_...'
-    // Title is in <p class="items-grid_itemTitleText_...">
-    // Price is in <p class="items-grid_price_...">
-    // Image is in <img> with class 'items-grid_image_...' (src or data-src1280)
-    // Description is in <p class="items-grid_itemDescriptionText_...">
-    // SOLD OUT status is in <p class="items-grid_soldOut_...">
-
     $('li[class*="items-grid_itemListLI_"]').each((i, el) => {
         const item = $(el);
         const link = item.find('a[href*="/items/"]');
         const href = link.attr('href');
 
         if (!href) return;
-
-        // Check for SOLD OUT status - User requested to KEEP sold out items
-        // const soldOut = item.find('p[class*="items-grid_soldOut_"]').length > 0;
-        // if (soldOut) return;
 
         // Resolve absolute URL
         const url = href.startsWith('http') ? href : `https://salvador.supersale.jp${href}`;
@@ -47,25 +50,44 @@ htmlFiles.forEach(fileName => {
         const imgTag = item.find('img[class*="items-grid_image_"]');
         let image = imgTag.attr('data-src1280') || imgTag.attr('src');
 
-        // Description might be truncated or full, let's grab it
         const description = item.find('p[class*="items-grid_itemDescriptionText_"]').text().trim();
 
         if (title && url) {
             // Avoid duplicates
             if (!products.find(p => p.url === url)) {
-                products.push({
+                // --- Step 3: Determine discontinued status ---
+                // A product is discontinued if:
+                //   (a) Its URL appears in the discontinued category page, OR
+                //   (b) Its description contains "こちらは終売商品です。"
+                const isDiscontinuedByCategory = discontinuedUrls.has(url);
+                const isDiscontinuedByDescription = description.includes('こちらは終売商品です');
+
+                const discontinued = isDiscontinuedByCategory || isDiscontinuedByDescription;
+
+                const productData = {
                     title,
                     price,
-                    description, // Add description to the object
+                    description,
                     image: image ? (image.startsWith('http') ? image : `https:${image}`) : null,
                     url
-                });
+                };
+
+                // If discontinued by category but not marked in description, 
+                // prepend the marker to the description for consistency
+                if (isDiscontinuedByCategory && !isDiscontinuedByDescription) {
+                    productData.description = 'こちらは終売商品です。\n\n' + productData.description;
+                    console.error(`[AUTO-MARKED] "${title}" → discontinued (detected from category page)`);
+                }
+
+                if (discontinued) {
+                    productData.discontinued = true;
+                }
+
+                products.push(productData);
             }
         }
     });
 });
 
-// If the above generic extraction failed to find titles/prices well, 
-// let's try a more specific selector if we can guess the theme.
-// But for now, let's see what we get.
+// Output as JSON to stdout
 console.log(JSON.stringify(products, null, 2));
