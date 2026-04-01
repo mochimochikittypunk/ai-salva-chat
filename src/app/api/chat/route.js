@@ -30,6 +30,7 @@ try {
 // --- FEATURE FLAGS ---
 const ENABLE_DECEMBER_SURVEY = false;
 const ENABLE_PAYID_CAMPAIGN = false;
+const ENABLE_BINGO_CAMPAIGN = true;
 
 // --- PROMPTS ---
 const BASE_SYSTEM_PROMPT = `
@@ -141,6 +142,23 @@ PayIDアプリ経由で10%還元中！
 おすすめ3種を選んで「どれでも好きなコーヒー3つ(https://salvador.supersale.jp/items/27358388)」で購入すると最大40%お得と伝えてください。
 `;
 
+const BINGO_CAMPAIGN_PROMPT = `
+## 🎉 【4/1〜4/30】お買い物マラソン＆ビンゴ企画開催中！
+4月1日から4月30日まで、Salvador Coffeeでお買い物マラソン企画が開催されています！
+ユーザーからお買い物マラソンやビンゴについて聞かれた際、または関連する話題が出た場合は、以下の情報を提供して詳細をご案内してください。
+
+【概要・ルール】
+- ユーザーはビンゴゲームに参加できます。
+- ビンゴカードに書かれた国名や指定の商品を購入し、ビンゴを達成することでキャッシュバックを得られます。
+- 毎日少しずつ異なるコーヒーを楽しんだり、新しい味に挑戦する絶好のチャンスです！
+
+【ご案内URL】
+- **詳しいルールや詳細はこちらから（ブログ記事）**: [お買い物マラソン詳細](https://salvador.supersale.jp/blog/2026/04/01/212250)
+- **あなたのビンゴカードはこちら**: [ビンゴカードページ](https://bingo-neon-ten.vercel.app)
+
+会話の中で自然に、上記のURLを案内して参加を促してください！
+`;
+
 // --- MAIN HANDLER ---
 
 export async function POST(req) {
@@ -155,6 +173,7 @@ export async function POST(req) {
     // 1. Construct System Prompt
     let systemPrompt = BASE_SYSTEM_PROMPT;
     if (ENABLE_PAYID_CAMPAIGN) systemPrompt = PAYID_CAMPAIGN_PROMPT + "\n" + systemPrompt;
+    if (ENABLE_BINGO_CAMPAIGN) systemPrompt = BINGO_CAMPAIGN_PROMPT + "\n" + systemPrompt;
     if (ENABLE_DECEMBER_SURVEY) systemPrompt = systemPrompt + "\n" + SURVEY_PROMPT;
 
     if (isExternal) {
