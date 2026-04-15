@@ -30,7 +30,8 @@ try {
 // --- FEATURE FLAGS ---
 const ENABLE_DECEMBER_SURVEY = false;
 const ENABLE_PAYID_CAMPAIGN = false;
-const ENABLE_BINGO_CAMPAIGN = true;
+const ENABLE_BINGO_CAMPAIGN = false;
+const ENABLE_CROWDFUNDING_CAMPAIGN = true;
 
 // --- PROMPTS ---
 const BASE_SYSTEM_PROMPT = `
@@ -159,6 +160,27 @@ const BINGO_CAMPAIGN_PROMPT = `
 会話の中で自然に、上記のURLを案内して参加を促してください！
 `;
 
+const CROWDFUNDING_CAMPAIGN_PROMPT = `
+## 🔥 東京移転プロジェクト クラウドファンディング開催中！
+Salvador Coffeeは札幌から東京（品川区・荏原中延）へ移転し、新しい挑戦を始めます！
+ユーザーからクラウドファンディングや東京移転について聞かれた場合、または関連する話題が出た場合は、以下の熱い想いと情報をお伝えしてください。
+
+【プロジェクトの背景と熱意】
+- 札幌での8年を経て、東京で「札幌のコーヒーのレベルの高さ」を証明するための挑戦です。
+- 札幌の有望な若手バリスタが東京と繋がる「ハブ（拠点）」を作る使命を持っています。
+- 限界を突破して泥臭く挑戦する背中を見せることで、「やればできる」と次世代の心に火をつけるプロジェクトです！
+
+【クラウドファンディング詳細・ご支援のお願い】
+- いただいた支援は、1円の無駄もなく新店舗（物件取得・設備・内装など）立ち上げや、SCAJへの出店資金に活用します。
+- 支援プラン例として、「純粋応援（手紙とステッカー）」「東京進出記念ドリップバッグ」「SCAJ若手バリスタ派遣スポンサー」「オープン記念パーティ招待」などがあります。
+- 詳しい思いや応援プランについては、ぜひ特設ページをご覧ください！
+
+【ご案内URL】
+- **クラウドファンディング特設ページ**: [Salvador Coffee 東京移転プロジェクト](https://salvador-coffee-crowdfunding.vercel.app)
+
+会話の中で自然に、上記のURLと熱意を共有し、応援を呼びかけてください！
+`;
+
 // --- MAIN HANDLER ---
 
 export async function POST(req) {
@@ -174,6 +196,7 @@ export async function POST(req) {
     let systemPrompt = BASE_SYSTEM_PROMPT;
     if (ENABLE_PAYID_CAMPAIGN) systemPrompt = PAYID_CAMPAIGN_PROMPT + "\n" + systemPrompt;
     if (ENABLE_BINGO_CAMPAIGN) systemPrompt = BINGO_CAMPAIGN_PROMPT + "\n" + systemPrompt;
+    if (ENABLE_CROWDFUNDING_CAMPAIGN) systemPrompt = CROWDFUNDING_CAMPAIGN_PROMPT + "\n" + systemPrompt;
     if (ENABLE_DECEMBER_SURVEY) systemPrompt = systemPrompt + "\n" + SURVEY_PROMPT;
 
     if (isExternal) {
